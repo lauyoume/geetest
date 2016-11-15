@@ -19,6 +19,7 @@ type geetestConfig struct {
 	RegisterUrl     string //注册获取challenge地址 可选
 	ServerValidUrl  string //二次验证地址
 	ServerValid     bool   // 二次验证,向服务器发起验证,默认为false
+	GtSdkVersion    string
 }
 
 // 初始化基本配置
@@ -26,6 +27,7 @@ func init() {
 	Config.ServerValidUrl = "http://api.geetest.com/validate.php"
 	Config.ServerStatusUrl = "http://api.geetest.com/check_status.php"
 	Config.RegisterUrl = "http://api.geetest.com/register.php?gt="
+	Config.GtSdkVersion = "go_1.0.0"
 }
 
 // 极验配置项
@@ -62,7 +64,9 @@ func (self GeeTestLib) CheckServerStatus() bool {
 
 // 生成challenge
 func (self *GeeTestLib) GenerateChallenge() (string, error) {
-	resp, err := http.Get(Config.RegisterUrl + Config.CaptchaId)
+	us := Config.RegisterUrl + Config.CaptchaId
+	us += "&sdk=" + Config.GtSdkVersion
+	resp, err := http.Get(us)
 	if err != nil {
 		return "", err
 	}
@@ -105,8 +109,9 @@ func ValidChallenge(frontChallenge, backChallenge, validateCode string, secCode 
 			return false, nil
 		}
 
-		params := make(url.Values, 1)
+		params := make(url.Values, 2)
 		params.Add("seccode", secCode[0])
+		params.Add("sdk", Config.GtSdkVersion)
 		resp, err := http.PostForm(Config.ServerValidUrl, params)
 		if err != nil {
 			return false, err
